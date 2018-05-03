@@ -6,6 +6,7 @@ require(rgdal)
 require(rgeos)
 #################################################################################################################
 ## ENMTools package
+# MANUAL: https://cran.r-project.org/web/packages/ENMeval/ENMeval.pdf
 # https://github.com/danlwarren/ENMTools
 install.packages("devtools")
 library(devtools)

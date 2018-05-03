@@ -1,0 +1,117 @@
+---
+title: "R Basics Lab"
+author: "Rob Harbert"
+date: "5/2/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R Basics
+
+## Outline:
+
+* Setting up on Lyell
+* Interactive R - Data I/O refresher, calling functions, libraries, data visualization.
+* Vectorizing
+* Scripting R
+* Defining R functions
+
+## Lyell
+
+We will be working on a teaching cluster maintained by the SICG. You will get printed instructions on how to log in. We have pre-installed most of the R libraries we will need for this course, but where possible I will include installation details for libraries we are using here.
+
+## Interactive R
+
+R is very handy for it's interactive command line interface. To get started type: 'R' at your command line.
+
+What version of R do you have?
+
+
+```{r fig.width=7, fig.align='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("./docs/Rprompt.png")
+ grid.raster(img)
+```
+Or
+```{r}
+version
+```
+
+We can easily get started with the R command promp open.
+
+```{r}
+x=2
+print(x) ##Print method
+class(x)
+
+x=seq(1:10) # Create a vector
+class(x)
+print(x)
+print(x[1]) # First index of vector
+print(x[1:5])
+
+y = matrix(nrow=5, ncol=5) # create a 5x5 matrix
+print(y)
+class(y)
+y[1,1] = 5
+print(y)
+y[,1]  = x[1:5]
+print(y)
+class(y[,1])
+
+y = cbind(seq(1:5), 
+          seq(1:5),
+          seq(1:5),
+          seq(1:5),
+          seq(1:5))
+
+class(y)
+
+
+```
+
+## Data I/O
+
+Read table/tab/csv text files:
+read.table()
+read.csv()
+read.delim()
+
+```{r}
+cars = read.table('../data/mtcars.csv', header=T, sep = ',') # Read a comma separated values file
+head(cars)
+
+cars = read.csv('../data/mtcars.csv')
+cars = read.csv2('../data/mtcars.csv') ## Interesting behavior here, will be somewhat faster
+
+cars = read.delim('../data/mtcars.csv', sep=',')
+
+
+```
+
+fread - Faster read
+
+```
+library(data.table)
+ebd = fread('../data/ebd_trim2.csv', sep = '\t')
+```
+
+
+## ggplot
+
+### ggmaps
+
+## Loops
+
+## apply family functions
+
+## Writing Functions
+
+
+
+
+
