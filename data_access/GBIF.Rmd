@@ -1,36 +1,57 @@
-### Downloading occurrence data from GBIF and plotting on a map ###
-install.packages('dismo')
-install.packages('rgdal')
-install.packages('GISTools')
+---
+title: "Download and Plotting GBIF Occurrence Data"
+author: "Peter Galante"
+date: "6 May, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Downloading occurrence data from GBIF and plotting on a map 
+```{r fig.width=7, fig.align='center', echo=FALSE}
 library(dismo)
 library(rgdal)
 library(maps)
+```
 
-## Go to www.naturalearthdata.com > Get the Data > Medium Scale Data; Cultural > Download countries.
-# then load the shapefile back into R.
+### Go to www.naturalearthdata.com 
+##### Click: Get the Data > Medium Scale Data; Cultural > Download countries.
+##### Load the shapefile back into R.
+```{r Plotting Data, eval=TRUE, warning=TRUE}
 continents <- readOGR(dsn = "/home/pjg/GIS/shpData", layer = "ne_50m_admin_0_countries")
-# Subset the SpatialPolygonsDataset by North America. Try plotting this and see how it looks. 
+##### Subset the SpatialPolygonsDataset by North America. Try plotting this and see how it looks. 
 N.America<-continents[continents@data$CONTINENT=="North America",]
-# crop North America by a rough extent of the area of interest.
+##### crop North America by a rough extent of the area of interest.
 Amb.opa<-crop(N.America, extent(c(-100, -66, 23, 46)))
 # Plot this extent of the map. Use any color you like.
 plot(Amb.opa, col='blue')
+```
 
 # Query GBIF for data associated with species name
+```{r Download/plot GBIF}
 MarbSalam<- gbif(genus = "Ambystoma", species = "opacum", download = T)
 # Look at the first 5 rows of MarbSalam. Get only the columns that have the species name, latitude and longitude.
 Locs<-na.omit(data.frame(cbind(MarbSalam$species), MarbSalam$lon, MarbSalam$lat))
 # Rename the column names of the Locs data.frame
 colnames(Locs)<-c("SPECIES","LONGITUDE","LATITUDE")
+# Plot the previous shapefile
+plot(Amb.opa, col='blue')
 # Put these points on the map
 points(Locs[,2:3], col='red', pch=16)
 # Add a legend
 legend("bottomright", col='red', pch=16, legend = 'Ambystoma opacum')
 # Add a scale
-map.scale(x = -98, y = 23, relwidth=0.1, ratio = T)
-# load GISTools library. This will mask the map.scale function from the "maps" package. Do this step last.
+map.scale(x = -98, y = 23, relwidth=0.1, metric=T)
+```
+
+### load GISTools library. This will mask the map.scale function from the "maps" package. Do this step last.
+```{r Adding some flair}
 # Add north arrow.
 library(GISTools)
 north.arrow(xb=-67, yb = 30, len=0.5, lab="N")
-
+```
 
