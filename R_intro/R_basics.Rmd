@@ -76,7 +76,30 @@ class(y)
 
 ## Data I/O
 
-Read table/tab/csv text files:
+### Shared course data:
+
+Navigate to /data/sp_bio and find the file ebd.csv
+
+Let's explore this file via some handy Unix command line tools.
+
+
+```{bash, eval=FALSE}
+cd /data/sp_bio
+ls -l
+du -h
+head ebd.csv
+wc -l ebd.csv
+grep "Cardinalis" ebd.csv | wc -l
+
+head -1 ebd.cvs ##look at the column headings.
+
+
+
+
+```
+
+
+### Read table/tab/csv/txt text files:
 read.table()
 read.csv()
 read.delim()
@@ -95,7 +118,7 @@ cars = read.delim('../data/mtcars.csv', sep=',')
 
 fread - Faster read
 
-```
+```{r, eval=FALSE}
 library(data.table)
 ebd = fread('../data/ebd_trim2.csv', sep = '\t')
 ```
