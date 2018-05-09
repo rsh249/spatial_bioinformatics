@@ -1,0 +1,216 @@
+---
+title: "Introduction to GPS: Using a GPS to collect data and add to R"
+author: "Professors Harbert and Blair"
+date: "9 May, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part 1: Using a GPS
+#### 1. First, explore the GPS unit. Use the “Page” button to cycle from page to page. 
+##### On the Odometer page, you can use the “Menu” button to reset the odometer.  
+##### On the map page, you can zoom in and out with the “in” and “out” buttons.
+##### Cycle through to the Main Menu page.  Explore the different menus (use the “quit” button to go back).
+# 
+
+#### 2. Go to the “Setup” page on the Main Menu (press “Menu” twice) and then go to “Units” or “Location”.
+##### What coordinate system is your GPS using?  Make sure it is set to WGS 84, and that the position format is hddd.ddddd (this is very important!)
+##### Now go to the “time” page. What time zone is your unit in? Make sure it is set to our time zone.
+# 
+#
+#### 3. Look at the Acquiring Satellites page.
+##### How many satellites is your GPS unit communicating with? It will take several minutes to connect with satellites. 
+##### It is important that the GPS is able to triangulate its position – with several satellites in different locations 
+##### and at different angles (right above, and several at angles on all sides).
+# 
+#
+#### **If you have an Android phone, you can also use your phone!**
+##### Download the free app “GPSLogger”.  (for an iPhone, you can use GPS & Maps, or other similar apps)
+##### After installing, you may need to allow the app to access certain parts of your phone. 
+##### As with any free app, make sure the accesses you are agreeing to make sense.
+#
+#
+### To get started, we need to make sure the waypoints are saving in an easily usable format. 
+##### Click the menu (“Hamburger button”) in the top corner. Go to Logging Details and turn off everything except “Log to CSV”. Then in File and Folder Details, set the directory on your phone to somewhere easily accessible. 
+##### On the main GUI page, there are many options such as “Start Logging” which will take waypoints at different time intervals, and different icons where, for example, you can see how many satellites are within range, and your location error. 
+##### The “Start Logging” button may by useful for something like mapping a line feature if you set short time intervals and walk at a steady pace. If you are mapping points, or vertices of a shape, there is a button at the bottom of the GUI that is a number “1” in a box. This button logs waypoints manually, so push whenever you want to take a reading. 
+#
+#
+#### Both a GPS unit or the GPSLogger app on your phone will tell you the approximate error at which you can take a point (on a GPS unit this is on the acquiring satellites page).  Before you take your first point, make a note of the error:
+##### What is the current error/accuracy?  ____________________
+##### As you move around, notice how the error changes as the number and location of satellites changes.
+##### Go into a building. How does the error change? ___________________________________________
+#
+##### Go under a tree. How does the error change? _____________________________________________
+##### In general, you want to only record a point with less than 10m error – or perhaps even less if possible. Based on the conditions of the day ##### – decide what level of error you will accept around each point you collect in today’s lab: ___________________
+#
+#
+#### 4. Now, you will choose three features outside from which to collect data.  
+##### Choose a point, a line, and a polygon feature (e.g. a flagpole, a sidewalk, and a fountain).  For the line and the polygon, you will be collecting point data that you will later turn into a line and a polygon in R. To create the line and polygon using points, you have to decide on the resolution of point samples you will use to construct your line or polygon. Will you take a point every 10m along your line? Every 3m? Record here the sampling resolution of your line and polygon features: ______________________________________
+#
+#### To record a point in your GPS unit, press and hold the “Mark” button (sometimes the “Enter” button). The waypoint menu appears. Record the information in the table (next page) and then hit (OK). To edit or take a second look at the waypoint you recorded, go to Menu-Points-Waypoints (or for the 62sc press the “Find” button and then go to “Waypoints”).
+#
+#### Using your smartphone, the button with a square around the number 1 is analogous to the “Mark” button on the GPS. Note: you cannot edit your waypoint log here. You have to download the waypoints and edit on computer. 
+
+##### Take notes here on the point, line and polygon you sample. The first line is filled in for you as an example – either format for the coordinates is correct (with a W or a – to denote the correct location) but make sure you are consistent in the format you are using. 
+| Waypoint Number | Feature Type  | Feature Description  | Latitude (N)   | Longitude (W)    | Error  |
+| :-------------: |:-------------:| :------------------: | :------------: | :--------------: | :----: |
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+|_________________|_______________|______________________|________________|__________________|________|
+
+
+# Part 2: Importing GPS data into R
+### 5. You can either manually input your points using Excel (or any other spreadsheet software), or, much easier, you can import data directly into R for visualization and analysis. 
+# 
+#### 5a. Using your smart phone:
+##### Make sure to send yourself (via email or other way) the .csv file from your phone so that you can access it on your computer, and move it into your working directory.
+#### 5b. Directly importing data from a GPS unit using a USB cable:
+##### Plug in the GPS Unit with a USB cable. Find the device folder and navigate to “GPX” and “Current” – move the Current.gpx file into your working directory.
+
+##### Load required packages
+```{r packages}
+require(raster);require(sp);require(rgdal); require(ggmap)
+```
+
+### Housekeeping
+```{r housekeeping}
+#  Set your working directory
+setwd('/home/pjg/GIS')
+# Create a directory folder and move into it
+dir.create('AdvancedGIS_R')
+setwd('AdvancedGIS_R')
+```
+
+## If you are using data from a Garmin GPS
+#### Load the data, extract only pertinent information and coordinates and create a new data.frame with these data
+```{r GPS}
+##############################################################
+###############  Importing Garmin GPS data  ##################
+##############################################################
+###### Create a character vector of the entire pathway for the gpx object from your Garmin GPS
+gpfile<-"/home/pjg/GIS/Classes/spatial_bioinformatics/R_GIS/Current.gpx"
+###### Read in the GPX file using the function from rdgal
+GPSfile<-readOGR(dsn = gpfile, layer = "track_points")
+##### Extract all of the data and coordinates
+wpsDF<-GPSfile@data
+wpsCoords<-GPSfile@coords
+##### Pull out only the necessary data:longitude, latitude, time, elevation
+##### Garmin does not supply accuracy at each waypoint
+wps<-cbind(wpsCoords[,1:2], wpsDF[,c(5,4)])
+colnames(wps)<-c("lon", "lat", "time", "elev")        
+head(wps)
+```
+
+## If you are using GPS data from Cellphone
+#### Load the data, extract only pertinent information and coordinates and create a new data.frame with these data
+```{r cellphone}
+###############################################################
+############  Importing cellphone data  #######################
+###############################################################
+# Read in .csv file of waypoints
+wps<-read.csv('/home/pjg/GIS/Classes/spatial_bioinformatics/R_GIS/20180413.csv')
+# Take a look at the first few rows of the data.frame
+head(wps)
+# We are only really interested in the first 5 columns of the waypoint file, but let's rearrainge them a bit
+wps<-wps[c(3,2,1,4,5)]
+# Now lon and lat are the first 2 columns of the data.frame
+head(wps)
+```
+
+## Visualizing waypoints on satellite imagery
+#### As a check, plot the waypoints on Google Earth imagery
+```{r visualization, warning=F, message=F}
+###############################################################
+############  Visualizing and creating features  ##############
+###############################################################
+##  Visualizing your waypoints with satellite data
+# Find the bounding box of your waypoints
+loc = cbind(c(min(wps$lon), max(wps$lon)), c(min(wps$lat), max(wps$lat)))
+# Name the columns
+loc = as.data.frame(loc)
+colnames(loc) = c('lon', 'lat')
+# Get the images from Google Earth Engine
+manbox <- make_bbox(lon = loc$lon, lat = loc$lat, f = .1)
+manmap <- get_map(location = manbox, maptype = "satellite", source = "google", zoom =18)
+# Plot
+ggmap(manmap) + 
+  geom_point(data = loc, 
+             color = "red",
+             size =1) # for better resolution, change size to smaller
+```
+
+## Creating Shapefile Features from localities
+```{r Making Shape from points}
+##  Transform the waypoints and save as a shapefile
+wpsShp<-SpatialPointsDataFrame(coords = wps[,1:2], data = wps)
+```
+```{r save ogr, eval=F}
+writeOGR(obj = wpsShp, dsn = paste(getwd()), layer = "Allwaypoints", driver = "ESRI Shapefile")
+```
+##  Separate the data into the appropriate features from which waypoints were taken outside
+#### The first step is to take another look at the data and find the rownumber of the corresponding feature
+```{r Looking at the data}
+print(wps)
+```
+
+```{r Creating features}
+# Enter the row number of the point feature below
+PointFeat<- 1
+# Enter the row numbers of the line features below, separated with a colon
+LineFeat<- 2:10
+# As above, enter the row numbers of the polygon features below, separated with a colon  
+PolyFeat<-  11:22 
+# Now, use these row numbers to create individual 'spatial' objects for each of the features
+# Point features
+PointShape <- SpatialPointsDataFrame(wps[,1:2][PointFeat,], data = wps[PointFeat,])
+# Line features
+PointLine <- SpatialLinesDataFrame(sl = SpatialLines(list(Lines(list(Line(coords = wps[,1:2][LineFeat,])), ID='a'))), match.ID = F, data = as.data.frame("Line"))
+# Polygon features
+PointPoly <- SpatialPolygonsDataFrame(Sr = SpatialPolygons(list(Polygons(list(Polygon(wps[PolyFeat,][,1:2])),"Poly"))), data = data.frame("Poly"), match.ID = F)
+```
+#### Saving as ESRI shapefiles
+```{r Saving Shapes, eval=F}
+writeOGR(obj = PointShape, dsn = paste(getwd()), layer = "PointFeature", driver = "ESRI Shapefile")
+writeOGR(obj = PointLine, dsn = paste(getwd()), layer = "LineFeature", driver = "ESRI Shapefile")
+writeOGR(obj = PointPoly, dsn = paste(getwd()), layer = "PolyFeature", driver = "ESRI Shapefile")
+```
+#### Test for accuracy
+###### PointShape
+```{r Checking Shapes}
+ggmap(manmap) + 
+  geom_point(data = data.frame(PointShape@coords), 
+             color = "red",
+             size =1) # for better resolution, change size to smaller
+
+# LineShape
+ggmap(manmap) + 
+  geom_polygon(data = PointLine, 
+               aes(x = long, y = lat),
+               color = "red",
+               size =1) # for better resolution, change size to smaller
+
+# PolyShape
+ggmap(manmap) + 
+  geom_polygon(data = PointPoly, 
+               aes(x = long, y = lat),
+               color = "red",
+               size =1) # for better resolution, change size to smaller
+```
