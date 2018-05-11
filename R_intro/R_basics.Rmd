@@ -93,10 +93,17 @@ grep "Cardinalis" ebd.csv | wc -l
 
 head -1 ebd.cvs ##look at the column headings.
 
-
-
-
 ```
+
+awk is useful for simple scripting and file filtering
+
+```{bash, eval = FALSE}
+#awk 'conditional { do } ' 
+
+awk '$7=="New York" { print }'
+
+
+````
 
 
 ### Read table/tab/csv/txt text files:
@@ -123,17 +130,50 @@ library(data.table)
 ebd = fread('../data/ebd_trim2.csv', sep = '\t')
 ```
 
+## Loops
+
+Repeating tasks using for loops
+
+
+```{r}
+for(i in 1:10) {
+  print(i)
+}
+
+```
+Catch loop output
+```{r}
+li = vector()
+for(i in 1:10){
+  li[[i]]=log(i)
+}
+```
+
+## apply family functions
+
+The Apply functions in R provide efficient repetition that usually out-performs for loops.
+
+```{r}
+
+print(y) #our matrix from earlier
+y = as.data.frame(y)
+li1 = apply(y, 1, log) # row-wise
+li2 = apply(y, 2, log) # column-wise
+
+li2 = lapply(y[,1], log) #returns list
+li2 = sapply(y[,1], log) #returns vector
+
+#replicate an operation, a wrapper for sapply
+rep = replicate(10, log(y[,1]), simplify='array')
+
+
+```
+
+## Writing Functions
 
 ## ggplot
 
 ### ggmaps
-
-## Loops
-
-## apply family functions
-
-## Writing Functions
-
 
 
 
