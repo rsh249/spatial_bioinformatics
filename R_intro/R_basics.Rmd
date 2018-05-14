@@ -1,7 +1,7 @@
 ---
 title: "R Basics Lab"
 author: "Rob Harbert"
-date: "5/2/2018"
+date: "5/14/2018"
 output: html_document
 ---
 
@@ -15,13 +15,110 @@ knitr::opts_chunk$set(echo = TRUE)
 
 * Setting up on Lyell
 * Interactive R - Data I/O refresher, calling functions, libraries, data visualization.
-* Vectorizing
-* Scripting R
-* Defining R functions
+* apply functions
+* Defining custom R functions
+* Data visualization with ggplot primer
 
 ## Lyell
 
 We will be working on a teaching cluster maintained by the SICG. You will get printed instructions on how to log in. We have pre-installed most of the R libraries we will need for this course, but where possible I will include installation details for libraries we are using here.
+
+NOTE: Usernames have been defined as your first initial and last name. e.g., 'rharbert'
+
+
+```{bash, eval = FALSE}
+ssh youruser@lyell.amnh.org
+
+```
+
+This will prompt you to set up DUO authentication access.
+
+Looking around Lyell:
+```{bash, eval=FALSE}
+pwd
+ls
+cd /data/spbio
+ls #Should find ebird, and climgrids folders
+
+
+
+```
+
+## Unix
+
+There are fundamental command line tools native to Unix that make working with large text files common to bioinformatics relatively easy. There are other options, like relational databases, that efficiently handle large data sets, but these are no substitue for unix command line tools for exploratory analyses. We will work through some of this in the next section.
+
+### Shared course data:
+
+Navigate to /data/sp_bio and find the file ebd.csv
+
+Let's explore this file via some handy Unix command line tools.
+
+
+```{bash, eval=FALSE}
+cd /data/sp_bio
+ls -l
+du -h
+du -h ebd_relMay-2017.txt
+head ebd_relMay-2017.txt
+head -50 ebd_relMay-2017.txt #print the 1st 50 lines
+wc -l ebd_relMay-2017.txt #get the line count 
+
+```
+
+grep - Regular expression searching.
+
+```{bash, eval=FALSE}
+grep "Cardinalis" ebd_relMay-2017.txt | wc -l
+
+grep "New York" ebd_relMay-2017.txt | wc -l
+
+# Let's put some of that into a file: NYS birds --
+
+grep "New York" ebd_relMay-2017.txt > ebd_trim.csv
+
+```
+
+awk is useful for simple scripting and file filtering
+
+```{bash, eval = FALSE}
+head -1 ebd_relMay-2017.txt #column headings
+
+#awk 'conditional { do } ' 
+#It can be useful to pair awk with head for exploration
+
+head ebd_trim.csv | awk '{print $1}'
+head ebd_trim.csv | awk '{print $2}'
+
+# The default delimiter for awk is any white space (space/tab)
+# This can be set explicitly
+head ebd_trim.csv | awk -F "\t" '{print $2}'
+head ebd_trim.csv | awk -F "\t" '{print $5}' # these should line up with the column header now.
+
+#Column 6 should be the scientific name
+# Get a list of unique entries in this field
+head ebd_trim.csv | awk -F "\t" '{print $6}' | sort | uniq
+
+
+````
+
+### rsync -- Command line file transfer 
+
+The best tool for moving large data files arount is rsync.
+
+```{bash, eval=F}
+##From your laptop, access Lyell to grab ebd_trim.csv 
+# Make sure you know where you are:
+pwd
+
+#rsync syntax:
+# a - archive (get everything within directories)
+# v - verbose (print messages)
+# z - compress data before transfer
+# ./ is the path to your current directory. 
+rsync -avz youruser@lyell.amnh.org:/data/spbio/ebd_trim.csv ./
+
+```
 
 ## Interactive R
 
@@ -76,36 +173,6 @@ class(y)
 
 ## Data I/O
 
-### Shared course data:
-
-Navigate to /data/sp_bio and find the file ebd.csv
-
-Let's explore this file via some handy Unix command line tools.
-
-
-```{bash, eval=FALSE}
-cd /data/sp_bio
-ls -l
-du -h
-head ebd.csv
-wc -l ebd.csv
-grep "Cardinalis" ebd.csv | wc -l
-
-head -1 ebd.cvs ##look at the column headings.
-
-```
-
-awk is useful for simple scripting and file filtering
-
-```{bash, eval = FALSE}
-#awk 'conditional { do } ' 
-
-awk '$7=="New York" { print }'
-
-
-````
-
-
 ### Read table/tab/csv/txt text files:
 read.table()
 read.csv()
@@ -127,7 +194,7 @@ fread - Faster read
 
 ```{r, eval=FALSE}
 library(data.table)
-ebd = fread('../data/ebd_trim2.csv', sep = '\t')
+ebd = fread('../data/ebd_trim.csv', sep = '\t')
 ```
 
 ## Loops
@@ -171,9 +238,133 @@ rep = replicate(10, log(y[,1]), simplify='array')
 
 ## Writing Functions
 
+The syntax for R functions:
+
+```{r}
+square = function(x){
+  return(x**2)
+}
+square(64)
+```
+
+Can take as many arguments as you want
+```{r}
+sumit = function(x,y){
+  return(x+y)
+}
+sumit(3,5)
+```
+And you can give the function default variable values:
+```{r}
+logbase=function(x, base=10){
+  l = log(x, base)
+  return(l)
+}
+
+logbase(2) #log10
+logbase(2, base=exp(1)) #natural log
+
+
+```
+
 ## ggplot
 
+the ggplot library is part of the 'tidyverse'. We will not use tidy protocols exclusively in this course, but the tools for making high quality figures in ggplot are worth touching on here.
+
+```{r}
+# install.packages("tidyverse") # if not yet installed
+
+library(tidyverse)
+
+#import data as before:
+## **The following code and data are shamelessly stolen from Chase Nelson's (cnelson@amnh.org) SICG workshop at the AMNH on ggplot from February 2018.**
+
+virus_data <- read.delim("../data/R_workshop_data.txt") # import SNP data
+
+# examine
+head(virus_data) # view the first 6 rows
+head(virus_data, n = 10) # view the first n rows
+str(virus_data) # describe the STRucture of the data.frame
+
+# add a new column
+virus_data$frequency <- virus_data$count / virus_data$coverage # add col with SNP frequencies
+virus_data$frequency <- with(virus_data, count / coverage) # same thing a different way
+
+head(virus_data) # view again to check that it worked
+
+# generate summary statistics
+summary(virus_data$coverage)
+
+# SCATTERPLOTS
+# view SNP frequencies
+ggplot(data = virus_data) +
+  geom_point(mapping = aes(x = position, y = frequency))
+
+# change x and y axis titles
+ggplot(data = virus_data) +
+  geom_point(mapping = aes(x = position, y = frequency)) +
+  xlab("Genome Position") + ylab("SNP Frequency")
+
+# use transparency to better visualize clusters of points
+ggplot(data = virus_data) +
+  geom_point(mapping = aes(x = position, y = frequency), alpha = 0.5) +
+  xlab("Genome Position") + ylab("SNP Frequency")
+
+# Facetting -- multiple plots
+
+ggplot(data = filter(virus_data, host_type == 'host')) +
+  geom_point(mapping = aes(x = position, y = frequency)) +
+  xlab("Genome Position") + ylab("SNP Frequency") +
+  facet_wrap(~ host)
+
+
+```
+
 ### ggmaps
+
+Also in the tidyverse is a great packages for easy generation of maps.
+
+```{r}
+
+library(tidyverse)
+library(mapdata)
+library(maps)
+library(ggmap)
+library(magrittr)
+
+
+```
+
+If any of these fail try and install packages.
+
+One of the best parts of these tools is the built in access to Google maps aerial imagery.
+
+```{r} 
+
+loc = cbind(-73.973917, 40.781799)
+loc = as.data.frame(loc)
+colnames(loc) = c('lon', 'lat')
+bkmap <- get_map(location = loc, maptype = "satellite", source = "google", zoom =14)
+ggmap(bkmap) + 
+  geom_point(data = loc, 
+             color = "red",
+             size =4)
+
+
+
+bkmap3 <- get_map(location = loc ,  maptype = "terrain", source = "google", zoom = 12)
+
+
+ggmap(bkmap3) + 
+  geom_point(data = loc, 
+             color = "red",
+             size =4)
+
+
+
+
+
+```
 
 
 
