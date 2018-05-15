@@ -224,8 +224,8 @@ The Apply functions in R provide efficient repetition that usually out-performs 
 
 print(y) #our matrix from earlier
 y = as.data.frame(y)
-li1 = apply(y, 1, log) # row-wise
-li2 = apply(y, 2, log) # column-wise
+li1 = apply(y, 1, sum) # row-wise
+li2 = apply(y, 2, sum) # column-wise
 
 li2 = lapply(y[,1], log) #returns list
 li2 = sapply(y[,1], log) #returns vector
@@ -359,6 +359,16 @@ ggmap(bkmap3) +
   geom_point(data = loc, 
              color = "red",
              size =4)
+
+
+bkmap4 <- get_map(location = loc ,  maptype = "toner-lite", source = "google", zoom = 10)
+
+
+ggmap(bkmap4) + 
+  geom_point(data = loc, 
+             color = "red",
+             size =4)
+
 
 
 

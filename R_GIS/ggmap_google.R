@@ -19,7 +19,7 @@ ggmap(bkmap2) +
              color = "red",
              size =4)
 
-bkmap3 <- get_map(location = ll_means,  maptype = "terrain", source = "google", zoom = 12)
+bkmap3 <- get_map(location = ll_means,  maptype = "terrain", source = "google", zoom = 10)
 
 
 ggmap(bkmap3) + 
