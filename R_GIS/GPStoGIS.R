@@ -49,7 +49,7 @@ manbox <- make_bbox(lon = loc$lon, lat = loc$lat, f = .1)
 manmap <- get_map(location = manbox, maptype = "satellite", source = "google", zoom =17)
 # Plot
 ggmap(manmap) + 
-  geom_point(data = loc, 
+  geom_point(data = wps, 
              color = "red",
              size =1) # for better resolution, change size to smaller
 
