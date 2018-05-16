@@ -74,8 +74,8 @@ extr = extract(Env, cbind(df$longitude, df$latitude))
 df = df[!is.na(extr[,1]),]
 
 thin<-thin(loc.data = df, 
-               lat.col = "longitude", 
-               long.col = "latitude",
+               lat.col = "latitude", 
+               long.col = "longitude",
                spec.col = "name", 
                thin.par = 10, 
                reps = 10, 
