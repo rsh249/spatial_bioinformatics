@@ -1,0 +1,249 @@
+---
+title: "ENMeval"
+author: "Rob Harbert and Peter Galante"
+date: "5/15/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# ENMeval
+
+Load libraries
+
+```{r}
+require(dismo)
+require(ENMeval)
+require(phyloclim)
+require(sp)
+require(rgdal)
+require(rgeos)
+require(ENMTools)
+require(spocc)
+```
+
+
+Get data from GBIF
+
+```{r}
+#occ = occ('Ambystoma opacum', from = 'gbif', limit=10000)
+occ = occ('Quercus virginiana', from = 'gbif')
+occdf = occ2df(occ)
+summary(occ)
+loc = cbind(occdf$longitude, occdf$latitude)
+loc = loc[loc[,1]<= -60,]
+loc = na.omit(loc)
+
+```
+Load WorldClim 
+```{r}
+# Env = stack("/data/spbio/climgrids/bio.gri")
+Env = stack("~/bio.gri")
+ext = extent(c(-100, - 60, 25, 55))
+Env = crop(Env, ext)
+
+```
+Maxent
+
+```{r, eval = FALSE}
+
+max = maxent(Env, loc)
+pred = predict(Env, max)
+
+
+```
+
+ENMeval
+```{r}
+require(ENMeval)
+extr = extract(Env, loc)
+loc = loc[!is.na(extr[,1]),]
+
+res = ENMevaluate(occ=loc, env = Env, method='block', parallel=T, numCores=4, fc=c("L", "LQ", "H"), RMvalues=seq(0.5,4,0.5), rasterPreds=F)
+
+print(res@results)
+```
+
+```{r}
+require(spThin)
+
+df = data.frame(occdf)
+extr = extract(Env, cbind(df$longitude, df$latitude))
+df = df[!is.na(extr[,1]),]
+
+thin<-thin(loc.data = df, 
+               lat.col = "longitude", 
+               long.col = "latitude",
+               spec.col = "name", 
+               thin.par = 10, 
+               reps = 10, 
+               locs.thinned.list.return = T, 
+               write.files = T, 
+               max.files = 2, 
+               out.dir = "Thinlocs/", 
+               write.log.file = T)
+
+
+newthin = read.csv('Thinlocs/thinned_data_thin1.csv')
+
+
+```
+
+Re-run ENMeval
+
+```{r}
+thinres = ENMevaluate(occ=newthin[,3:2], env = Env, method='block', parallel=T, numCores=4, fc=c("L", "LQ", "H"), RMvalues=seq(1,4,1), rasterPreds=F)
+
+print(thinres@results)
+
+```
+
+Check out the pattern of model fitting:
+
+```{r}
+eval.plot(thinres@results, "Mean.AUC", )
+
+```
+
+### "Best" models
+
+
+```{r}
+#minimize ommission rate AND optimize AUC
+
+
+setsort = res@results[order(res@results[,'Mean.ORmin']),]
+setsort2 = setsort[order(setsort[,'Mean.AUC'], decreasing=TRUE),]
+top = setsort2[1,]
+best = which(as.character(res@results[,1]) == as.character(setsort2[1,1]))
+pred.raw = predict(Env, res@models[[best]])
+plot(pred.raw, col=viridis::viridis(99))
+
+#and for the thinned model...
+setsort = thinres@results[order(thinres@results[,'Mean.ORmin']),]
+setsort2 = setsort[order(setsort[,'Mean.AUC'], decreasing=TRUE),]
+top = setsort2[1,]
+best.thin = which(as.character(thinres@results[,1]) == as.character(setsort2[1,1]))
+pred.thin = predict(Env, thinres@models[[best.thin]])
+plot(pred.raw, col=viridis::viridis(99))
+plot(pred.thin, col=viridis::viridis(99))
+
+```
+
+Did you get different models parameters? Output? Which was more complex? Which performed better?
+
+```{r}
+print(res@results[best,])
+
+print(thinres@results[best.thin,])
+
+
+```
+
+### Binary Range -- Thresholding
+
+```{r}
+#via dismo
+#Get straight from ENMeval output:
+ev.set <- evaluate(newthin[,3:2], thinres@bg.pts, thinres@models[[best.thin]], Env)
+th1 = threshold(ev.set)
+p1.nomit = pred.thin >= th1$no_omission
+p1.equal = pred.thin >= th1$equal_sens_spec
+
+
+#OR: calculate evaluation from predicted model output:
+occ <- na.omit(extract(pred.thin, newthin[,3:2]));
+bg = randomPoints(Env[[1]], n=20000)
+bg <- na.omit(extract(pred.thin, bg));
+ev2 <- evaluate(occ, bg)
+th2 = threshold(ev2)
+p2.nomit = pred.thin >= th2$no_omission
+p2.equal = pred.thin >= th2$equal_sens_spec
+
+#p1 and p2 should be virtually identical
+
+
+```
+
+Look at object 'th' for other threshold options.
+
+### Niche overlap -- 
+
+Warren, D.L., R.E. Glor, M. Turelli, and D. Funk. 2009. Environmental niche equivalency versus conservatism: quantitative approaches to niche evolution. Evolution 62:2868-2883; Erratum: Evolution 65: 1215
+
+
+```{r}
+
+#Values closer to 1 indicate stronger niche overlap
+nicheOverlap(pred.raw, pred.thin, "D", mask=T)
+
+
+```
+
+
+### Get background data from minimum convex polygon of occurrence data.
+
+```{r}
+#Minimum convex polygon function
+mcp <- function (xy) { 
+  xy <- as.data.frame(coordinates(xy))
+  coords.t <- chull(xy[, 1], xy[, 2])
+  xy.bord <- xy[coords.t, ]
+  xy.bord <- rbind(xy.bord[nrow(xy.bord), ], xy.bord)
+  return(SpatialPolygons(list(Polygons(list(Polygon(as.matrix(xy.bord))), 1))))
+}
+
+MCP.thinlocs = mcp(df[,2:3])
+plot(Env[[1]], col=viridis::viridis(99))
+plot(MCP.thinlocs, add=T)
+
+envPoly <- rasterToPolygons(Env[[1]], fun=NULL, na.rm=T)
+
+#Get bg
+bg.area.thinlocs <- gIntersection(envPoly, MCP.thinlocs)
+MCP.raster.thinlocs <- rasterize(bg.area.thinlocs, Env[[1]])
+bg.points.thinlocs <- randomPoints(mask = MCP.raster.thinlocs, n = 5000)
+
+plot(Env[[1]], col=viridis::viridis(99))
+plot(bg.area.thinlocs, add=T)
+
+
+```
+
+Use 'bg.points.thinlocs' to build a new best model
+
+### ENVIREM 
+
+http://envirem.github.io/ 
+
+Try the Envirem dataset instead of Worldclim
+
+```{r, eval=FALSE}
+enirem = stack('/data/spbio/climgrids/envirem.gri')
+```
+
+### Paleoclimate models
+
+http://worldclim.org/paleo-climate1
+
+The climgrids folder has several of the GCM paleoclimate outputs for the Mid Holocene and LGM scenarios provided by Worldclim and Envirem.
+
+Use at least one of these to project a model into the past.
+
+```{r, eval=FALSE}
+lgm = stack('/data/spbio/climgrids/miroc/lgm/bio.gri')
+lgm.pred.thin = predict(lgm,  thinres@models[[best.thin]]) 
+
+```
+
+
+### Homework 1
+
+1) Pick two (or more) new species from a single genus and use ENMeval to find the best model for each.
+2) Make maps of best model output for each as continuous and binary ranges.
+3) Project into LGM for all 3 GCMs. (2 sp. x 3 GCMs)
+4) Calculate range overlap between each LGM projection and the modern as a proxy for geographic range shift.
+
+
