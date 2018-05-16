@@ -94,7 +94,7 @@ newthin = read.csv('Thinlocs/thinned_data_thin1.csv')
 Re-run ENMeval
 
 ```{r}
-thinres = ENMevaluate(occ=newthin[,3:2], env = Env, method='block', parallel=T, numCores=4, fc=c("L", "LQ", "H"), RMvalues=seq(1,4,1), rasterPreds=F)
+thinres = ENMevaluate(occ=newthin[,2:3], env = Env, method='block', parallel=T, numCores=4, fc=c("L", "LQ", "H"), RMvalues=seq(1,4,1), rasterPreds=F)
 
 print(thinres@results)
 
@@ -147,14 +147,14 @@ print(thinres@results[best.thin,])
 ```{r}
 #via dismo
 #Get straight from ENMeval output:
-ev.set <- evaluate(newthin[,3:2], thinres@bg.pts, thinres@models[[best.thin]], Env)
+ev.set <- evaluate(newthin[,2:3], thinres@bg.pts, thinres@models[[best.thin]], Env)
 th1 = threshold(ev.set)
 p1.nomit = pred.thin >= th1$no_omission
 p1.equal = pred.thin >= th1$equal_sens_spec
 
 
 #OR: calculate evaluation from predicted model output:
-occ <- na.omit(extract(pred.thin, newthin[,3:2]));
+occ <- na.omit(extract(pred.thin, newthin[,2:3]));
 bg = randomPoints(Env[[1]], n=20000)
 bg <- na.omit(extract(pred.thin, bg));
 ev2 <- evaluate(occ, bg)
@@ -233,7 +233,9 @@ The climgrids folder has several of the GCM paleoclimate outputs for the Mid Hol
 Use at least one of these to project a model into the past.
 
 ```{r, eval=FALSE}
-lgm = stack('/data/spbio/climgrids/miroc/lgm/bio.gri')
+lgm = stack('/data/spbio/climgrids/miroc/lgm_wc.gri')
+names(lgm) = names(Env) #Make names match 
+lgm = crop(lgm, extent(Env))
 lgm.pred.thin = predict(lgm,  thinres@models[[best.thin]]) 
 
 ```
