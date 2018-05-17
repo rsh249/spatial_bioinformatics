@@ -17,7 +17,9 @@ Day 2 - R as GIS - https://rsh249.github.io/spatial_bioinformatics/GPStoGISwithT
 
 Day 3 - ENM - https://rsh249.github.io/spatial_bioinformatics/ENMeval2.html
 
-Day 4 - Special Topics
+Day 4 - Special Topics - 
+  https://rsh249.github.io/spatial_bioinformatics/niche_overlap.html
+
 
 Day 5 - Advanced R
 
