@@ -23,7 +23,7 @@ require(spocc)
 ```
 
 ```{r}
-taxon = 'Ambystoma_tigrinum'
+taxon = 'Quercus virginiana'
 #Build a best model
 #get occ
 occ = occ(taxon, from = 'gbif', limit =900)
@@ -33,7 +33,7 @@ summary(occ)
 
 #get climate
 # Env = stack("/data/spbio/climgrids/bio.gri")
-Env = stack("~/envirem.gri")
+Env = stack("~/bio.gri")
 ext = extent(c(-125, -40, 25, 60))
 Env = crop(Env, ext)
 
@@ -76,7 +76,25 @@ newthin = read.csv(paste(taxon, "/thinned_data_thin1.csv", sep=''))
 #with all points (before thinning)
 #bg1 = background.points.buffer(df[,2:3], radius = 500000, n = 5000, mask = Env[[1]])
 #or after thinning
-bg2 = background.points.buffer(newthin[,2:3], radius = 500000, n = 2000, mask = Env[[1]])
+
+#function from ENMTools
+background.points.buffer <- function(points, radius, n, mask){
+
+  x <- circles(points, d=radius, lonlat=TRUE)
+
+  pol <-  rgeos::gUnaryUnion(x@polygons)
+
+  buffer.raster <- mask(mask, pol)
+
+  xy <- sampleRandom(buffer.raster, size=n, xy=TRUE)
+
+  colnames(xy)[1:2] <- c(colnames(points))
+
+  return(as.data.frame(xy[,1:2]))
+}
+
+
+bg2 = background.points.buffer(newthin[,2:3], radius = 500000, n = 20000, mask = Env[[1]])
 
 plot(Env[[1]], col = viridis::viridis(99))
 points(bg2, col = 'grey')
@@ -98,7 +116,7 @@ thinres = ENMevaluate(occ=newthin[,2:3],
                       RMvalues=seq(1,4,1), 
                       rasterPreds=F)
 print(thinres@results)
-eval.plot(thinres@results, "Mean.AUC", )
+eval.plot(thinres@results, "Mean.AUC" )
 
 #predictbest
 setsort = thinres@results[order(thinres@results[,'Mean.ORmin']),]
