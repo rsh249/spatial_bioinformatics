@@ -19,6 +19,9 @@ Day 3 - ENM - https://rsh249.github.io/spatial_bioinformatics/ENMeval2.html
 
 Day 4 - Special Topics - 
   https://rsh249.github.io/spatial_bioinformatics/niche_overlap.html
+  
+  https://rsh249.github.io/spatial_bioinformatics/paleo.html
+  
 
 
 Day 5 - Advanced R
