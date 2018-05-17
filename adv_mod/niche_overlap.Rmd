@@ -1,0 +1,150 @@
+---
+title: "Niche comparisons"
+author: "Rob Harbert"
+date: "5/16/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Getting started
+
+Getting data
+
+```{r}
+library(spocc)
+library(raster)
+library(viridis)
+```
+
+```{r}
+#sister salamander taxa:
+d1 = occ('Ambystoma texanum')
+d2 = occ('Ambystoma tigrinum')
+occd1 = data.frame(occ2df(d1))
+occd2 = data.frame(occ2df(d2))
+```
+
+Process GBIF data:
+
+```{r}
+
+#We *know* these should be in North America so clip the distributions
+occd1 = occd1[occd1$lon <= -40,]
+occd2 = occd2[occd2$lon <= -40,]
+occd1 = na.omit(occd1)
+occd2 = na.omit(occd2)
+#get extent 
+combine.lat = c(occd1$lat, occd2$lat)
+combine.lon = c(occd1$lon, occd2$lon)
+ext=extent(c(min(combine.lon)-5, max(combine.lon)+5, min(combine.lat)-5, max(combine.lat)+5))
+```
+
+Get Environmental data and visualize
+
+```{r}
+
+sta = stack('~/bio.gri')
+Env = crop(sta, ext)
+plot(Env[[1]], col =viridis(99))
+points(occd1[,2:3], pch=20, col = 'darkred')
+points(occd2[,2:3], pch=20, col = 'grey')
+
+```
+
+
+## Library ecospat -- Niche similarity/equivalency testing
+
+Tutorial: https://github.com/vdicolab/ecospat 
+
+```{r}
+library(ecospat)
+library(ENMTools)
+
+#PCA-env
+
+#background by radius
+
+bg1 = background.points.buffer(occd1[,2:3], radius = 200000, n = 10*nrow(occd1), mask = Env[[1]])
+bg2 = background.points.buffer(occd2[,2:3], radius = 200000, n = 10*nrow(occd2), mask = Env[[1]])
+
+# Get environmental data
+extract1 = na.omit(cbind(occd1[,2:3], extract(Env, occd1[,2:3]), rep(1, nrow(occd1))))
+extract2 = na.omit(cbind(occd2[,2:3], extract(Env, occd2[,2:3]), rep(1, nrow(occd2))))
+
+colnames(extract1)[ncol(extract1)] = 'occ'
+colnames(extract2)[ncol(extract2)] = 'occ'
+
+extbg1 = na.omit(cbind(bg1, extract(Env, bg1), rep(0, nrow(bg1))))
+extbg2 = na.omit(cbind(bg2, extract(Env, bg2), rep(0, nrow(bg2))))
+
+colnames(extbg1)[ncol(extbg1)] = 'occ'
+colnames(extbg2)[ncol(extbg2)] = 'occ'
+
+
+#merge occ and bg data 
+
+
+dat1 = rbind(extract1, extbg1)
+dat2 = rbind(extract2, extbg2)
+
+
+pca.env <- dudi.pca(
+  rbind(dat1, dat2)[,3:21],
+  scannf=FALSE,
+  nf=2
+  )
+
+#Variable contribution
+ecospat.plot.contrib(contrib=pca.env$co, eigen=pca.env$eig)
+
+scores.globclim<-pca.env$li # PCA scores for the whole study area
+
+scores.globclim<-pca.env$li # PCA scores for the whole study area (all points)
+
+scores.sp1 <- suprow(pca.env,
+                    extract1[which(extract1[,22]==1),3:21])$li # PCA scores for the species 1 distribution
+
+scores.sp2 <- suprow(pca.env,
+                    extract2[which(extract2[,22]==1),3:21])$li # PCA scores for the species 1 distribution
+
+scores.clim1 <- suprow(pca.env,dat1[,3:21])$li # PCA scores for the whole native study area
+
+scores.clim2 <- suprow(pca.env,dat2[,3:21])$li # PCA scores for the whole native study area
+
+
+grid.clim1 <- ecospat.grid.clim.dyn(
+  glob = scores.globclim,
+  glob1 = scores.clim1,
+  sp = scores.sp1,
+  R = 100,
+  th.sp = 0
+)
+grid.clim2 <- ecospat.grid.clim.dyn(
+  glob = scores.globclim,
+  glob1 = scores.clim2,
+  sp = scores.sp2,
+  R = 100,
+  th.sp = 0
+)
+
+D.overlap <- ecospat.niche.overlap (grid.clim1, grid.clim2, cor=T)$D 
+D.overlap
+
+```
+
+Niche Equivalence Test
+
+```{r}
+eq.test <- ecospat.niche.equivalency.test(grid.clim1, grid.clim2,
+                                          rep=10, alternative = "greater") ##rep = 1000 recommended for operational runs
+sim.test <- ecospat.niche.similarity.test(grid.clim1, grid.clim2,
+                                          rep=1000, alternative = "greater",
+                                          rand.type=2) 
+ecospat.plot.overlap.test(eq.test, "D", "Equivalency")
+ecospat.plot.overlap.test(sim.test, "D", "Similarity")
+```
+
+
