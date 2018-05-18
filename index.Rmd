@@ -36,3 +36,24 @@ GBIF access: https://rsh249.github.io/spatial_bioinformatics/GBIF.html
 
 Worldclim: https://rsh249.github.io/spatial_bioinformatics/worldclim.html
 
+# Readings:
+
+
+https://openresearchsoftware.metajnl.com/article/10.5334/jors.bu/
+
+https://t.co/lh0sI4jo7B  **Video
+
+https://www.sciencedirect.com/science/article/pii/S0169534704002034
+
+https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/2041-210X.12261
+
+https://onlinelibrary.wiley.com/doi/full/10.1111/jeb.12179 
+
+https://onlinelibrary.wiley.com/doi/full/10.1111/ecog.02909 *Not assigned
+
+https://onlinelibrary.wiley.com/doi/abs/10.3732/ajb.1300417  *Not assigned
+
+http://rsbl.royalsocietypublishing.org/content/roybiolett/14/5/20170660.full.pdf
+
+http://r-pkgs.had.co.nz/intro.html
+
