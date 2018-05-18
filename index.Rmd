@@ -25,9 +25,14 @@ Day 4 - Special Topics -
 
 
 Day 5 - Advanced R
-
+  https://rsh249.github.io/spatial_bioinformatics/parallel.html
+  
+  https://rsh249.github.io/spatial_bioinformatics/R_packages.html
+  
 
 # Supplements
 
 GBIF access: https://rsh249.github.io/spatial_bioinformatics/GBIF.html
+
+Worldclim: https://rsh249.github.io/spatial_bioinformatics/worldclim.html
 

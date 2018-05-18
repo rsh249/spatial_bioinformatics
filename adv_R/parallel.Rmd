@@ -1,0 +1,139 @@
+---
+title: "Parallel Processing in R"
+author: "Rob Harbert"
+date: "5/17/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Why Parallel
+
+Many computational jobs can be split into small, repeatable, chunks. In modern computing systems we have access to plenty of computing power so it is often a good approach to split up a job into its individual pieces. 
+
+Think about the ENMevaluate() function we have been using. That gives us options to run the code in parallel. We have already seen how this helps speed up overall execution time for ENMeval. IF we look at the source code we would see that they split up the execution of each model to a different process and run for at a time. (https://github.com/bobmuscarella/ENMeval/blob/master/R/ENMevaluate.R)
+
+```{r, eval=FALSE}
+#Example:
+
+thinres = ENMevaluate(
+  occ = newthin[, 2:3],
+  env = Env,
+  method = 'block',
+  parallel = T, #This tells the function to turn on the parallel code option
+  numCores = 4, #And how many parallel processes to run
+  bg.coords = bg2,
+  fc = c("L", "LQ", "H"),
+  RMvalues = seq(1, 4, 1),
+  rasterPreds = F
+)
+```
+
+## CPU Architecture
+
+
+## Parallel in R
+
+R has a number of useful libraries for writing parallel code. 
+
+Logical flow of parallel computing:
+
+Open a CPU cluster (size n)
+Split job into discrete 'queues'
+  Run job queues across each process (1:n)
+Collect results data objects
+
+We can build some example code with parallel processing using "apply" type functions:
+
+```{r}
+factorial = function(x){ }
+
+require(parallel)
+do = seq(1, 10000000)
+p = proc.time()
+l_works = sapply(do, sqrt)
+proc.time() - p
+
+nclus = 4
+cl = makeCluster(nclus, type ='FORK'); #"Forking" is the most basic type of paralellization using the system "FORK" command
+  p = proc.time()
+  splits = clusterSplit(cl, do)
+  p_works2 = parSapply(cl, splits, sqrt)
+  proc.time() - p
+stopCluster(cl)
+
+```
+
+You do want to make sure that you are sending a job big enough to justify the parallel overhead. It is very easy to make things worse.
+```{r}
+nclus = 4
+cl = makeCluster(nclus, type ='FORK'); #"Forking" is the most basic type of paralellization using the system "FORK" command
+  p = proc.time()
+  p_works2 = parSapply(cl, do, sqrt)
+  proc.time() - p; #No faster than non-parallel
+stopCluster(cl)
+
+```
+
+Socket (SOCK) clusters can be a little more efficient because only the data within the function is copied. FORK clusters copy the entire R environment.
+
+```{r}
+nclus = 4
+cl = makeCluster(nclus, type ='SOCK'); 
+  p = proc.time()
+  splits = clusterSplit(cl, do)
+  p_works2 = parSapply(cl, splits, sqrt)
+  proc.time() - p; #About 25% quicker?
+stopCluster(cl)
+```
+
+NOTE: parSapply returns a list of vectors. The list has nclus elements:
+
+```{r}
+length(p_works2)
+length(unlist(p_works2))
+```
+
+## Parallel 'spocc'
+
+```{r}
+#we need a simplified function that accepts a single argument to use the parSapply method
+wrap_max = function(x){
+  require(spocc)
+  require(raster)
+  occ=data.frame(occ2df(occ(x, limit=3000, from='gbif')));
+  max = dismo::maxent(Env, occ[,2:3])
+  return(max)
+}
+
+library(raster)
+Env = raster::stack('~/bio.gri')
+ext = extent(c(-100, -40, 25, 45))
+Env = crop(Env, ext)
+
+splist = c("Quercus virginiana", "Quercus geminata")
+
+p=proc.time()
+max_lin = lapply(splist, wrap_max)
+proc.time() - p
+
+library(parallel)
+nclus = 2
+cl = makeCluster(nclus, type ='SOCK'); 
+  clusterExport(cl, list("Env"))
+  p = proc.time()
+  max_par = parLapply(cl, splist, wrap_max); #We want parLapply this time because the data frames don't simplify well
+  proc.time() - p; 
+stopCluster(cl)
+
+print(max_par)
+
+```
+
+
+
+
+
+

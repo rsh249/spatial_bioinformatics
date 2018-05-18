@@ -1,0 +1,107 @@
+ ---
+title: "R Packages"
+author: "Rob Harbert"
+date: "5/17/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Packages Book
+
+http://r-pkgs.had.co.nz/intro.html
+
+## Useful R libraries for package writing and management
+
+```{r, eval = FALSE}
+library(devtools)
+require(roxygen2)
+```
+
+### Build package skeleton
+
+```{r, eval = FALSE}
+rm(list = ls()) # clear workspace before building
+
+getwd()
+dir.create('./newR/')
+setwd(paste(getwd(), '/newR/', sep=''))
+create('./')
+
+roxygenize('./') #Builds description file and documentation
+
+
+```
+
+roxygen2 is great, BUT we have to write function documentation in a specific way. Write the next block to a file and put it in the R subdirectory.
+
+```{r, eval=FALSE}
+#' Echo
+#' 
+#' This function echos whatever you give it.
+#' 
+#' @param echo A word or sentence to echo
+#'
+#' @export
+#' @examples
+#'
+#' echo('This is a test')
+
+
+echo = function(echo){
+  return(echo)
+}
+    
+    
+```
+
+Then roxygenize
+
+```{r, eval = FALSE}
+roxygenize('./')
+```
+
+Or just check with devtools
+
+```{r, eval = FALSE}
+check(cran=TRUE)
+```
+
+Once you check() the library this can be installed as usual:
+
+```{r, eval = FALSE}
+library(newR)
+```
+
+AND we can upload that repository to GitHub and install from there. I advise using the GitHub desktop app: https://desktop.github.com/ (Mac/Windows). GitKraken might be OK too: https://www.gitkraken.com/download/mac 
+
+```{r, eval=FALSE}
+install_github('rsh249/newR')
+```
+
+Git install
+
+```{bash, eval=FALSE}
+#set up git
+git config --global user.name 'Your Name'
+git config --global user.email 'your@email.com'
+git config --global credential.helper osxkeychain  #on mac only
+
+#local git repository in library folder
+cd newR
+git init
+git add
+git commit
+
+#then add to github
+git remote add origin https://github.com/username/new_repo
+git push -u origin master
+ 
+#Then for updates:
+git add .
+git commit -m 'Add files'
+```
+
+
